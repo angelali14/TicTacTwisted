@@ -8,7 +8,7 @@ pygame.mixer.music.play(loops=-1, start=0)
 pygame.init()
 pygame.font.init()
 my_font = pygame.font.SysFont('Comic Sans MS', 70)
-font = pygame.font.SysFont('Comic Sans MS', 20)
+font = pygame.font.SysFont('Comic Sans MS', 30)
 pygame.display.set_caption("TicTacTwisted")
 
 SCREEN_HEIGHT = 600
@@ -38,116 +38,126 @@ o_img = pygame.transform.scale(o, (200, 200))
 
 replay_img = pygame.image.load('replay.png')
 replay_img = pygame.transform.scale(replay_img, (300, 100))
-replay = button.Button(150, 250, replay_img)
+replay_button = button.Button(150, 250, replay_img)
 
-cell_size = 200  # how big each box is
+cell_size = 200
 rows, cols = 3, 3
-board_state = [[' ' for _ in range(cols)] for _ in range(rows)]  # creating board
-clickable_areas = [pygame.Rect(col * cell_size, row * cell_size, cell_size, cell_size) for row in range(rows) for col in range(cols)]
+player1 = 0
+player2 = 0
+
+
+def reset_game():
+    global board_state, winner, tie, score_updated
+    board_state = [[' ' for _ in range(cols)] for _ in range(rows)]  # creating board
+    winner = None
+    tie = False
+    score_updated = False
+
+
+reset_game()
+clickable_areas = [pygame.Rect(col * cell_size, row * cell_size, cell_size, cell_size) for row in range(rows) for col in
+                   range(cols)]
+clickable_area = True
+
 
 def tic_tac_toe_screen():
-    global clickable_area
-    clickable_area = True
+    global clickable_area, winner, tie, player1, player2, score_updated
     running = True
-    player = 'X'  # x starts
-    player1 = 0
-    player2 = 0
-    while running:  # beginning of while loop
+    player = 'X'
+
+    while running:
         screen.blit(board_img, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()  # game end
+                exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:  # starting the game
-                for index, area in enumerate(clickable_areas):  # identify which cell is clickable
-                    if area.collidepoint(event.pos):  # whether a cell is clicked
-                        row, col = index // cols, index % cols  # if mouse click is within area         # 65-67 issue
-                        if board_state[row][col] == ' ':  # used to check if this cell is empty
-                            board_state[row][col] = player  # if te cell is empty, it will add the players symbol
-                            clickable_area = True
-                            player = 'O' if player == 'X' else 'X'  # changes turns
+                if clickable_area:   # identify which cell is clickable
+                    for index, area in enumerate(clickable_areas):  # whether a cell is clicked
+                        if area.collidepoint(event.pos):  # if mouse click is within area
+                            row, col = index // cols, index % cols  # used to check if this cell is empty
+                            if board_state[row][col] == ' ':  # if the cell is empty, it will add the players symbol
+                                board_state[row][col] = player
+                                player = 'O' if player == 'X' else 'X'   # changes turns
+                                check_win()
+                                if winner or tie:
+                                    clickable_area = False
 
-        for row in range(rows):  # placing the x and o images (graphic)
+        for row in range(rows):  # placing the x and o images
             for col in range(cols):
-                if board_state[row][col] == 'X':  # used to draw position
+                if board_state[row][col] == 'X':   # used to draw position
                     screen.blit(x_img, (col * cell_size, row * cell_size))
                 elif board_state[row][col] == 'O':  # used to draw position
                     screen.blit(o_img, (col * cell_size, row * cell_size))
 
-        for col in board_state:  # for col player 2 win
-            if all(index == 'O' for index in col):
-                win_msg = my_font.render("Player 2 Wins!", True, (156, 220, 219))
-                screen.fill((255, 220, 228))
-                replay.draw(screen)
-                screen.blit(win_msg, (70, 150))
-            # player2 += 1
+        if winner or tie:
+            if not score_updated:
+                if winner == 'X':
+                    player1 = player1 + 1
+                elif winner == 'O':
+                    player2 = player2 + 1
 
-        for row in board_state:  # for row player 2 win
-            if all(index == 'O' for index in row):
-                win_msg = my_font.render("Player 2 Wins!", True, (156, 220, 219))
-                screen.fill((255, 220, 228))
-                replay.draw(screen)
-                screen.blit(win_msg, (70, 150))
-                # player2 += 1
+                score_updated = True
+            status()
+            if replay_button.draw(screen):
+                reset_game()
+                clickable_area = True
+                tic_tac_toe_screen()
+                running = True
 
-        for row in board_state:
-            if all(index == 'X' for index in row):
-                win_msg = my_font.render("Player 1 Wins!", True, (156, 220, 219))
-                screen.fill((255, 220, 228))
-                replay.draw(screen)
-                screen.blit(win_msg, (70, 150))
-                # player1 += 1
-
-        for col in board_state:  # for col player 1 win
-            if all(index == 'X' for index in col):
-                win_msg = my_font.render("Player 1 Wins!", True, (156, 220, 219))
-                screen.fill((255, 220, 228))
-                replay.draw(screen)
-                screen.blit(win_msg, (70, 150))
-
-        if all(all(index != ' ' for index in row) for row in board_state):  # checks if all the rows are full
-            for col in board_state:  # for col player 2 win
-                if all(index == 'O' for index in col):
-                    win_msg = my_font.render("Player 2 Wins!", True, (156, 220, 219))
-                    screen.fill((255, 220, 228))
-                    replay.draw(screen)
-                    screen.blit(win_msg, (70, 150))
-                # player2 += 1
-
-            for row in board_state:  # for row player 2 win
-                if all(index == 'O' for index in row):
-                    win_msg = my_font.render("Player 2 Wins!", True, (156, 220, 219))
-                    screen.fill((255, 220, 228))
-                    replay.draw(screen)
-                    screen.blit(win_msg, (70, 150))
-                    # player2 += 1
-
-            for row in board_state:
-                if all(index == 'X' for index in row):
-                    win_msg = my_font.render("Player 1 Wins!", True, (156, 220, 219))
-                    screen.fill((255, 220, 228))
-                    replay.draw(screen)
-                    screen.blit(win_msg, (70, 150))
-                    # player1 += 1
-
-            for col in board_state:  # for col player 1 win
-                if all(index == 'X' for index in col):
-                    win_msg = my_font.render("Player 1 Wins!", True, (156, 220, 219))
-                    screen.fill((255, 220, 228))
-                    replay.draw(screen)
-                    screen.blit(win_msg, (70, 150))
-            tie_msg = my_font.render("Tie!!", True, (156, 220, 219))
-            screen.fill((255, 220, 228))                      # tie does not work displays tie when cells are full
-            screen.blit(tie_msg, (210, 150))
-            replay.draw(screen)
+        display_scores()
         pygame.display.update()
 
-        if all(all(index != ' ' for index in col) for col in board_state):  # checks if all the cols are full
-            tie_msg = my_font.render("Tie!!", True, (156, 220, 219))
-            screen.fill((255, 220, 228))
-            screen.blit(tie_msg, (210, 150))
-            replay.draw(screen)
-        pygame.display.update()
+
+def display_scores():
+    player1_score_text = font.render("Player 1 Score: " + str(player1), True, (114, 181, 180))
+    player2_score_text = font.render("Player 2 Score: " + str(player2), True, (114, 181, 180))
+    screen.blit(player1_score_text, (10, 10))
+    screen.blit(player2_score_text, (10, 50))
+
+
+def status():
+    global tie
+    if winner == 'X':
+        screen.fill((255, 220, 228))
+        winner_msg = my_font.render("Player 1 WON!", True, (156, 220, 219))
+        screen.blit(winner_msg, (100, 100))
+
+    if winner == 'O':
+        screen.fill((255, 220, 228))
+        winner_msg = my_font.render("Player 2 WON!", True, (156, 220, 219))
+        screen.blit(winner_msg, (100, 100))
+
+    if tie:
+        screen.fill((255, 220, 228))
+        draw_msg = my_font.render("Game Draw!", True, (156, 220, 219))
+        screen.blit(draw_msg, (100, 100))
+
+
+def check_win():
+    global winner, tie
+
+    for row in range(3):
+        if board_state[row][0] == board_state[row][1] == board_state[row][2] and board_state[row][0] != ' ':
+            winner = board_state[row][0]
+            break
+
+    for col in range(3):
+        if board_state[0][col] == board_state[1][col] == board_state[2][col] and board_state[0][col] != ' ':
+            winner = board_state[0][col]
+            break
+
+    if board_state[0][0] == board_state[1][1] == board_state[2][2] and board_state[0][0] != ' ':
+        winner = board_state[0][0]
+
+    if board_state[0][2] == board_state[1][1] == board_state[2][0] and board_state[0][2] != ' ':
+        winner = board_state[0][2]
+
+    if all(all(cell != ' ' for cell in row) for row in board_state) and winner is None:
+        tie = True
+
+
 def main_screen():
     screen.fill((255, 220, 228))
     screen.blit(main_menu, (70, 70))
@@ -158,7 +168,10 @@ def main_screen():
 
     if exit_button.draw(screen):
         pygame.quit()
+        exit()
+
     pygame.display.update()
+
 
 run = True
 while run:
@@ -167,11 +180,5 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-
-    for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if replay.draw(screen):
-                screen.blit(board_img, (0, 0))
-            pygame.display.update()
 
 pygame.quit()
